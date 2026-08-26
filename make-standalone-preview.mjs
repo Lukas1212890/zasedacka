@@ -20,7 +20,7 @@ async function api(url,opt={}){
   if(url==='/api/reservations'&&method==='POST'){
     const body=JSON.parse(opt.body||'{}'); body.date_to=body.date_to||body.date;if(body.all_day){body.time_from='00:00';body.time_to='23:59'}
     if(rows.some(r=>r.date<=body.date_to&&(r.date_to||r.date)>=body.date&&r.time_from<body.time_to&&r.time_to>body.time_from))throw new Error('Tento termín se překrývá s jinou rezervací.');
-    rows.push({id:Date.now(),...body}); savePreviewRows(rows); return {ok:true};
+    const id=Date.now(),ownerToken=body.owner_token;delete body.owner_token;rows.push({id,...body,_owner_token:ownerToken}); savePreviewRows(rows); return {ok:true,id};
   }
   const reservationMatch=url.match(/^\/api\/reservations\/(\d+)$/);
   if(reservationMatch&&method==='PUT'){
@@ -31,8 +31,9 @@ async function api(url,opt={}){
     rows[index]={id,...body}; savePreviewRows(rows); return {ok:true};
   }
   if(reservationMatch&&method==='DELETE'){
-    if(!previewAdmin())throw new Error('Pouze administrátor může rezervaci smazat.');
-    savePreviewRows(rows.filter(r=>r.id!==Number(reservationMatch[1]))); return {ok:true};
+    const id=Number(reservationMatch[1]),body=JSON.parse(opt.body||'{}'),row=rows.find(r=>r.id===id);
+    if(!previewAdmin()&&(!row||row._owner_token!==body.owner_token))throw new Error('Neplatný rušící kód.');
+    savePreviewRows(rows.filter(r=>r.id!==id)); return {ok:true};
   }
   if(url==='/api/admin/login'){
     const body=JSON.parse(opt.body||'{}');
