@@ -43,6 +43,7 @@ async function api(url,opt={}){
 }`;
 
 let html = match[1]
+  .replace("replace(/\\\\n/g,'<br>')", "replace(/\\n/g,'<br>')")
   .replace("async function api(url,opt){const r=await fetch(url,{headers:{'content-type':'application/json'},...opt});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Něco se nepovedlo.');return j}", localApi)
   .replace('<p>Rezervační kalendář zasedací místnosti</p>', '<p>Rezervační kalendář zasedací místnosti · lokální náhled</p>');
 
