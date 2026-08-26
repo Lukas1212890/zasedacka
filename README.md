@@ -6,6 +6,7 @@ Online rezervační kalendář zasedací místnosti pro Cloudflare Workers + D1.
 - veřejné zobrazení měsíčního kalendáře
 - vytvoření rezervace bez účtu
 - povinné: datum, čas od/do, jméno, telefon, e-mail
+- volitelná poznámka k rezervaci
 - kontrola překryvu rezervací
 - admin přihlášení
 - pouze admin může rezervace upravovat a mazat
