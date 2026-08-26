@@ -14,18 +14,19 @@ async function api(url,opt={}){
   const method=opt.method||'GET', rows=previewRows();
   if(url.startsWith('/api/reservations?')){
     const month=new URL(url,'https://preview.local').searchParams.get('month');
-    return {reservations:rows.filter(r=>r.date.startsWith(month)),admin:previewAdmin()};
+    const monthStart=month+'-01', next=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),1), monthEnd=new Date(next.getFullYear(),next.getMonth(),0).toISOString().slice(0,10);
+    return {reservations:rows.filter(r=>r.date<=monthEnd&&(r.date_to||r.date)>=monthStart),admin:previewAdmin()};
   }
   if(url==='/api/reservations'&&method==='POST'){
-    const body=JSON.parse(opt.body||'{}');
-    if(rows.some(r=>r.date===body.date&&r.time_from<body.time_to&&r.time_to>body.time_from))throw new Error('Tento čas se překrývá s jinou rezervací.');
+    const body=JSON.parse(opt.body||'{}'); body.date_to=body.date_to||body.date;if(body.all_day){body.time_from='00:00';body.time_to='23:59'}
+    if(rows.some(r=>r.date<=body.date_to&&(r.date_to||r.date)>=body.date&&r.time_from<body.time_to&&r.time_to>body.time_from))throw new Error('Tento termín se překrývá s jinou rezervací.');
     rows.push({id:Date.now(),...body}); savePreviewRows(rows); return {ok:true};
   }
   const reservationMatch=url.match(/^\/api\/reservations\/(\d+)$/);
   if(reservationMatch&&method==='PUT'){
     if(!previewAdmin())throw new Error('Pouze administrátor může rezervaci upravit.');
-    const id=Number(reservationMatch[1]), body=JSON.parse(opt.body||'{}'), index=rows.findIndex(r=>r.id===id);
-    if(rows.some(r=>r.id!==id&&r.date===body.date&&r.time_from<body.time_to&&r.time_to>body.time_from))throw new Error('Tento čas se překrývá s jinou rezervací.');
+    const id=Number(reservationMatch[1]), body=JSON.parse(opt.body||'{}'), index=rows.findIndex(r=>r.id===id);body.date_to=body.date_to||body.date;if(body.all_day){body.time_from='00:00';body.time_to='23:59'}
+    if(rows.some(r=>r.id!==id&&r.date<=body.date_to&&(r.date_to||r.date)>=body.date&&r.time_from<body.time_to&&r.time_to>body.time_from))throw new Error('Tento termín se překrývá s jinou rezervací.');
     if(index<0)throw new Error('Rezervace nebyla nalezena.');
     rows[index]={id,...body}; savePreviewRows(rows); return {ok:true};
   }
